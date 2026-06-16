@@ -1,41 +1,41 @@
 ---
 name: react-frontend-expert
-description: Hướng dẫn Agent viết React 19 + Vite + Tailwind cho ClassManager — quản lý auth 4 role, data table điểm thi đua, dashboard biểu đồ và dynamic form.
+description: Guide for writing React 19 + Vite + Tailwind for ClassManager — managing 4 roles auth, points competition data table, chart dashboard, and dynamic forms.
 ---
 
-# Mục tiêu
-Đảm bảo Frontend ClassManager viết đúng chuẩn TypeScript, không dùng `any`, phân quyền UI theo role rõ ràng, xử lý loading/error state đầy đủ và nhất quán với API contract trong SRS.
+# Objective
+Ensure ClassManager Frontend is written in strict TypeScript, avoids using `any`, manages UI role permissions clearly, handles loading/error states comprehensively, and aligns with the API contracts in the SRS.
 
 ---
 
-## Quy trình Thực hiện (Instructions)
+## Instructions
 
-### 1. Kiểm tra Ngữ cảnh & Cấu trúc Dự án
-- Mọi file React đặt trong `frontend/src/`
-- Đọc `docs/srs/classmanager_srs_full.md` phần API Endpoints trước khi viết service call
-- Kiểm tra `vite.config.ts` xem proxy `/api` đã trỏ về `http://localhost:8080` chưa
+### 1. Context & Project Structure Checklist
+- All React files must be placed in `frontend/src/`
+- Read `docs/srs/classmanager_srs_full.md` API Endpoints section before writing service calls
+- Check if proxy `/api` in `vite.config.ts` points to `http://localhost:8080`
 
-**Cấu trúc Thư mục chuẩn:**
-Các file Frontend mới phải được tổ chức đúng thư mục quy định tại `frontend/src/`:
-- `components/`: Chứa các component UI dùng chung (`common/`) hoặc theo module (ví dụ: `dashboard/`, `points/`).
-- `pages/`: Các trang lớn ánh xạ trực tiếp từ router.
-- `types/`: Nơi định nghĩa các Type/Interface TypeScript dùng chung cho các đối tượng API.
-- `services/`: Các service xử lý gọi API Axios tập trung.
-- `stores/`: Chứa các Zustand Store quản lý state toàn cục.
-- `context/`: Nơi chứa React Context cho các state cục bộ hoặc session.
-- `utils/`: Chứa các hàm tiện ích (`dateUtils`, `constants`).
+**Standard Folder Structure:**
+New Frontend files must be organized in the designated directories under `frontend/src/`:
+- `components/`: Contains shared UI components (`common/`) or module-specific ones (e.g., `dashboard/`, `points/`).
+- `pages/`: Page components mapped directly from the router.
+- `types/`: Where shared TypeScript Types/Interfaces for API objects are defined.
+- `services/`: Axios API services centralized.
+- `stores/`: Zustand stores for global state management.
+- `context/`: React Context for local or session states.
+- `utils/`: Utility functions (`dateUtils`, `constants`).
 
-**Quy trình viết một Feature mới ở Frontend (Frontend Feature Flow):**
-Khi phát triển một tính năng giao diện mới, tuân thủ đúng trình tự sau:
-1. **Types**: Định nghĩa API Response/Request interfaces trong `src/types/`.
-2. **Service**: Viết service gọi API sử dụng `axiosInstance` tập trung trong `src/services/`.
-3. **Zustand Store**: Tạo hoặc cập nhật Zustand store trong `src/stores/` (ví dụ: `useAuthStore`, `useClassStore`) nếu state cần chia sẻ toàn cục.
-4. **UI Components & Pages**: Xây dựng component giao diện trong `src/components/` và ghép trang trong `src/pages/`. Tuân thủ bộ quy tắc thiết kế tối giản trong `minimalist-ui`.
-5. **Route Guard**: Cấu hình phân quyền Route thông qua `ProtectedRoute` tại `App.tsx` (nếu trang yêu cầu đăng nhập/role cụ thể).
+**Frontend Feature Development Flow:**
+When developing a new frontend feature, adhere to the following sequence:
+1. **Types**: Define API Response/Request interfaces in `src/types/`.
+2. **Service**: Create an API service utilizing the centralized `axiosInstance` in `src/services/`.
+3. **Zustand Store**: Create or update a Zustand store in `src/stores/` (e.g., `useAuthStore`, `useClassStore`) if global state sharing is required.
+4. **UI Components & Pages**: Build UI components in `src/components/` and compose them into pages in `src/pages/`. Adhere to the minimalist UI design guidelines in `minimalist-ui`.
+5. **Route Guard**: Configure Route guards using `ProtectedRoute` in `App.tsx` (if authentication or specific roles are required).
 
-### 2. Quản lý Kiểu dữ liệu (TypeScript Strict)
-- KHÔNG dùng `any` — mọi data từ API phải có `interface` hoặc `type`
-- Định nghĩa types trong `src/types/` theo từng domain:
+### 2. Type Management (TypeScript Strict)
+- DO NOT use `any` — all API data must have an `interface` or `type`
+- Define types in `src/types/` by domain:
 
 ```typescript
 // src/types/student.ts
@@ -53,14 +53,14 @@ export interface Student {
 // src/types/pointLog.ts
 export interface PointLog {
   id: number
-  pointValue: number       // dương = thưởng, âm = phạt
+  pointValue: number       // positive = reward, negative = penalty
   reason: string
   changedBy: string
   weekStartDate: string    // ISO date
   createdAt: string        // ISO datetime
 }
 
-// src/types/api.ts — Error response thống nhất từ BE
+// src/types/api.ts — Unified error response from BE
 export interface ApiError {
   timestamp: string
   status: number
@@ -70,32 +70,31 @@ export interface ApiError {
   path: string
 }
 
-// Response khi yêu cầu gửi OTP (Chế độ MVP/Thử nghiệm)
+// Response for OTP send request (MVP/Testing Mode)
 export interface OtpSendResponse {
   message: string
-  otp?: string // Có mã này khi SMS_API_KEY để trống, phục vụ hiển thị trực tiếp trên UI
+  otp?: string // Contains this code when SMS_API_KEY is empty, for direct display on UI
 }
 ```
 
-### 3. ENV & Cấu hình
+### 3. Environment Variables & Configuration
 
-**Quy tắc bắt buộc:**
-- KHÔNG hardcode URL, API key trong code
-- Mọi biến môi trường Frontend dùng prefix `VITE_` để Vite expose ra client
-- File `.env.local` KHÔNG được commit lên Git — chỉ commit `.env.example`
+**Mandatory Rules:**
+- DO NOT hardcode URLs or API keys in code
+- All frontend environment variables must use the `VITE_` prefix to be exposed to the client
+- The `.env.local` file MUST NOT be committed to Git — only commit `.env.example`
 
-
-**Cách đọc ENV trong code:**
+**How to read environment variables in code:**
 ```typescript
-// ✅ ĐÚNG
+// ✅ CORRECT
 const apiBase = import.meta.env.VITE_API_BASE_URL
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
-// ❌ SAI — hardcode
+// ❌ INCORRECT — hardcoded
 const apiBase = 'http://localhost:8080'
 ```
 
-**`vite.config.ts` — proxy dev để tránh CORS khi local:**
+**`vite.config.ts` — dev proxy to avoid CORS locally:**
 ```typescript
 export default defineConfig({
   plugins: [react()],
@@ -110,13 +109,13 @@ export default defineConfig({
 })
 ```
 
-**Khi deploy lên Vercel:**
-- Set `VITE_API_BASE_URL=https://your-backend.koyeb.app` trong Vercel Dashboard → Settings → Environment Variables
-- Set `VITE_GOOGLE_CLIENT_ID` đúng với Google Cloud Console
+**When deploying to Vercel:**
+- Set `VITE_API_BASE_URL=https://your-backend.koyeb.app` in Vercel Dashboard → Settings → Environment Variables
+- Set `VITE_GOOGLE_CLIENT_ID` matching Google Cloud Console
 
-### 4. Cấu hình Gọi API & Zustand Store
-- Dùng **Zustand** để quản lý trạng thái toàn cục (Auth, UI states).
-- Tập trung toàn bộ API call trong `src/services/` — KHÔNG gọi axios trực tiếp trong component.
+### 4. API Configuration & Zustand Store
+- Use Zustand for global state management (Auth, UI states).
+- Centralize all API calls in `src/services/` — DO NOT call axios directly inside components.
 
 ```typescript
 // src/stores/useAuthStore.ts
@@ -145,14 +144,14 @@ import { useAuthStore } from '../stores/useAuthStore'
 
 const instance = axios.create({ baseURL: '/api/v1' })
 
-// Request interceptor: tự động gắn Bearer token lấy từ Zustand store
+// Request interceptor: automatically attaches Bearer token from the Zustand store
 instance.interceptors.request.use(config => {
   const token = useAuthStore.getState().accessToken
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-// Response interceptor: tự động refresh khi 401
+// Response interceptor: automatically refreshes when 401
 instance.interceptors.response.use(
   res => res,
   async err => {
@@ -165,9 +164,9 @@ instance.interceptors.response.use(
 )
 ```
 
-### 5. Phân quyền UI theo Role & Route Guard
-- Sử dụng Zustand Store (`useAuthStore`) để kiểm tra quyền truy cập của người dùng.
-- Tạo `ProtectedRoute` component kiểm tra role trước khi render.
+### 5. Role-based UI Permissions & Route Guards
+- Use the Zustand store (`useAuthStore`) to verify user access privileges.
+- Create a `ProtectedRoute` component to check roles before rendering.
 
 ```typescript
 // src/components/common/ProtectedRoute.tsx
@@ -183,15 +182,15 @@ const ProtectedRoute = ({ allowedRoles }: { allowedRoles: Role[] }) => {
   return <Outlet />
 }
 
-// Dùng trong router (App.tsx)
+// Use in the router (App.tsx)
 <Route element={<ProtectedRoute allowedRoles={['TEACHER']} />}>
   <Route path="/dashboard" element={<DashboardPage />} />
   <Route path="/students" element={<StudentListPage />} />
 </Route>
 ```
 
-### 6. Đồng bộ Màu sắc (Tailwind & Shadcn) & Data Table
-- **Cấu hình Màu sắc Tối giản**: Để đồng bộ giao diện Minimalist UI, khai báo bảng màu pastel trong [frontend/src/index.css](file:///d:/Data/Personal/JOBS/ME/class-manager/frontend/src/index.css) (CSS Variables) và cấu hình **Shadcn / Tailwind** trong `tailwind.config.js`:
+### 6. Color Synchronization (Tailwind & Shadcn) & Data Table
+- **Minimalist Color Configuration**: To synchronize the Minimalist UI, declare the pastel color palette in [frontend/src/index.css](file:///d:/Data/Personal/JOBS/ME/class-manager/frontend/src/index.css) (CSS Variables) and configure **Shadcn / Tailwind** in `tailwind.config.js`:
   ```css
   /* src/index.css */
   :root {
@@ -231,44 +230,44 @@ const ProtectedRoute = ({ allowedRoles }: { allowedRoles: Role[] }) => {
     }
   }
   ```
-- **TanStack Table**: Luôn có Skeleton loading state khi fetch dữ liệu (không dùng spinner).
-- **Badge Màu**: Phải dùng các màu semantic pastel đã cấu hình:
+- **TanStack Table**: Always include a Skeleton loading state when fetching data (do not use spinners).
+- **Color Badges**: Must use the configured semantic pastel colors:
 
 ```typescript
 // src/components/common/PointBadge.tsx
 const getPointColor = (point: number, basePoint: number) => {
   const ratio = point / basePoint
-  if (ratio >= 0.9) return 'bg-pale-green text-pale-green-text'    // Tốt
-  if (ratio >= 0.65) return 'bg-pale-blue text-pale-blue-text'    // Khá
-  if (ratio >= 0.5) return 'bg-pale-yellow text-pale-yellow-text' // Trung bình
-  return 'bg-pale-red text-pale-red-text'                         // At-risk / Yếu
+  if (ratio >= 0.9) return 'bg-pale-green text-pale-green-text'    // Good
+  if (ratio >= 0.65) return 'bg-pale-blue text-pale-blue-text'    // Fair
+  if (ratio >= 0.5) return 'bg-pale-yellow text-pale-yellow-text' // Average
+  return 'bg-pale-red text-pale-red-text'                         // At-risk / Weak
 }
 ```
 
-### 7. Dashboard Chart
-- Dùng Recharts cho biểu đồ điểm tuần
-- Chart phải responsive, có tooltip tiếng Việt, legend rõ ràng
+### 7. Dashboard Charts
+- Use Recharts for weekly point charts.
+- Charts must be responsive, with clear English tooltips and legends.
 
 ```typescript
-// Tooltip tiếng Việt
+// English Tooltip
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active) return null
   return (
     <div className="bg-white border rounded p-2 shadow text-sm">
-      <p className="font-medium">Tuần {label}</p>
-      <p>Điểm TB: <span className="font-bold">{payload[0]?.value}</span></p>
+      <p className="font-medium">Week {label}</p>
+      <p>Avg Points: <span className="font-bold">{payload[0]?.value}</span></p>
     </div>
   )
 }
 ```
 
-### 8. Dynamic Form (Lý lịch Học sinh)
-- Render form fields từ `form_template.structure` (JSONB từ BE)
-- Hỗ trợ đủ các type: `text`, `number`, `boolean`, `select`, `date`, `textarea`
-- Dùng React Hook Form + Zod validation
+### 8. Dynamic Forms (Student Profiles)
+- Render form fields from `form_template.structure` (JSONB from BE)
+- Support all types: `text`, `number`, `boolean`, `select`, `date`, `textarea`
+- Use React Hook Form + Zod validation
 
 ```typescript
-// Render field động theo type từ BE
+// Dynamically render fields based on BE type
 const renderField = (field: FormField) => {
   switch (field.type) {
     case 'text': return <input type="text" {...register(field.fieldName)} />
@@ -278,15 +277,15 @@ const renderField = (field: FormField) => {
         {field.options?.map(opt => <option key={opt}>{opt}</option>)}
       </select>
     )
-    // ... các type khác
+    // ... other types
   }
 }
 ```
 
-### 9. Loading & Error State (Bắt buộc)
-- Mọi data fetch phải có 3 state: loading / success / error
-- Dùng Skeleton thay vì spinner cho table và card
-- Error message dùng `message` từ ApiError response của BE
+### 9. Loading & Error States (Mandatory)
+- Every data fetch operation must support 3 states: loading / success / error
+- Use Skeletons instead of spinners for tables and cards
+- Error messages should use the `message` field from the BE ApiError response
 
 ```typescript
 if (isLoading) return <TableSkeleton rows={10} />
@@ -296,36 +295,36 @@ return <DataTable data={students} />
 
 ---
 
-## Quy trình Kiểm tra (Verification Workflow)
+## Verification Workflow
 
-Sau mỗi lần tạo hoặc sửa component:
+After creating or modifying a component:
 
 ```bash
-# Bước 1: Di chuyển vào frontend
+# Step 1: Navigate to frontend directory
 cd frontend
 
-# Bước 2: Kiểm tra TypeScript và lint
+# Step 2: Run linter and TypeScript check
 npm run lint
 npx tsc --noEmit
 
-# Bước 3: Kích hoạt Integrated Browser để render thử
-# Bước 4: Chỉ tạo Artifact Walkthrough khi không có lỗi TypeScript
+# Step 3: Launch the Integrated Browser to preview rendering
+# Step 4: Only create the Walkthrough artifact if TypeScript compiles successfully
 ```
 
 ---
 
-## Anti-patterns Cần Tránh
+## Anti-patterns to Avoid
 
 ```
-❌ Dùng `any` cho data từ API
-❌ Gọi axios/fetch trực tiếp trong component — phải qua services/
-❌ Hardcode role check bằng string thô ("TEACHER") — dùng enum/type
-❌ Không có loading state khi fetch data
-❌ Không có error handling khi API thất bại
-❌ Expose access token trong localStorage — dùng memory + HttpOnly cookie
-❌ Hardcode URL, API key trong code — luôn dùng import.meta.env.VITE_*
-❌ Commit file .env.local lên Git — chỉ commit .env.example
-❌ Dùng // TODO, placeholder — viết đầy đủ
-❌ Dùng màu tùy tiện cho badge — chỉ dùng bộ màu semantic đã định nghĩa
-❌ Gọi API trong useEffect mà không cleanup (memory leak)
+❌ Using `any` for data from API
+❌ Calling axios/fetch directly inside components — must use services/
+❌ Hardcoding role checks with raw strings ("TEACHER") — use enum/type
+❌ Missing loading states when fetching data
+❌ Missing handling when API fails
+❌ Exposing access tokens in localStorage — use memory + HttpOnly cookie
+❌ Hardcoding URLs or API keys — always use import.meta.env.VITE_*
+❌ Committing .env.local to Git — only commit .env.example
+❌ Using // TODO, placeholder comments — write complete implementations
+❌ Using arbitrary colors for badges — only use the defined semantic colors
+❌ Calling APIs in useEffect without cleanup (memory leak)
 ```

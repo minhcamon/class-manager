@@ -5,7 +5,7 @@ Welcome, Coding Agent. This document serves as your primary guide for understand
 ---
 
 ## 1. Project Purpose
-ClassManager is a multi-tenant, multi-school online homeroom class management platform. It allows homeroom teachers to track class competition points (điểm thi đua), maintain student profiles, handle student-group assignments, and automatically or manually lock weekly results. The system is designed to be highly secure, auditable, and transparent, with distinct user roles and a clear distinction between administrative roles and organizational positions (e.g., Group Leaders).
+ClassManager is an online homeroom class management platform. It allows homeroom teachers to track class competition points (điểm thi đua), maintain student profiles, handle student-group assignments, and automatically or manually lock weekly results. The system is designed to be highly secure, auditable, and transparent, with distinct user roles and a clear distinction between administrative roles and organizational positions (e.g., Group Leaders).
 
 ---
 

@@ -8,9 +8,7 @@ This matrix summarizes the accessibility of various system actions across all sy
 
 | Functional Area / Action | ADMIN | TEACHER | STUDENT (Group Leader) | STUDENT (Regular) | Notes / Context |
 |:---|:---:|:---:|:---:|:---:|:---|
-| **Manage Schools (`schools`)** | ✅ | ❌ | ❌ | ❌ | Create, Read, Update, Delete schools |
 | **Approve/Reject Teachers** | ✅ | ❌ | ❌ | ❌ | Transition user state from `PENDING` |
-| **Initialize School Year** | ❌ | ✅ | ❌ | ❌ | Set new year to `ACTIVE` |
 | **Approve/Reject Students** | ❌ | ✅ | ❌ | ❌ | Approve student access to designated class |
 | **Import Student Roster** | ❌ | ✅ | ❌ | ❌ | Excel/CSV import for class profiles |
 | **Assign/Revoke Group Leader** | ❌ | ✅ | ❌ | ❌ | Update `groups.leader_student_id` |
@@ -18,7 +16,7 @@ This matrix summarizes the accessibility of various system actions across all sy
 | **Transfer Student Groups** | ❌ | ✅ | ❌ | ❌ | Move students between different `groups` |
 | **Log Competition Points** | ❌ | ✅ | ✅ | ❌ | Teacher: class-wide. Leader: group-only. |
 | **Manual Week Lock** | ❌ | ✅ | ❌ | ❌ | Lock snapshot of current week points |
-| **End School Year** | ❌ | ✅ | ❌ | ❌ | Shift year status to `ENDED` (read-only) |
+| **End/Stop Class** | ❌ | ✅ | ❌ | ❌ | Shift class status to `ENDED` (read-only) |
 | **View Audit Logs** | ✅ | ✅ | ❌ | ❌ | Admin: system-wide. Teacher: class-wide. |
 | **View Competition Points** | ❌ | ✅ | ✅ | ✅ | Teacher: class. Leader: group. Student: self. |
 | **Update Personal Profile** | ❌ | ❌ | ✅ | ✅ | Fill dynamic profile registration sheet |
@@ -27,8 +25,8 @@ This matrix summarizes the accessibility of various system actions across all sy
 
 ## 2. Fine-Grained Authorization Scopes
 
-### 2.1 Cross-School Isolation (Multi-Tenancy)
-No role (including `TEACHER` and `STUDENT`) is authorized to view, create, or update records belonging to a different school (`school_id`). Database queries and API requests must always partition results by the authenticated user's `school_id` (retrieved from the JWT claims).
+### 2.1 Teacher-Class Isolation
+No teacher is authorized to view or edit records belonging to a different class they do not own (classes where `teacher_id` matches the teacher's profile ID). Database queries and API requests must always partition results by the authenticated user's class ownership.
 
 ### 2.2 Peer-Grading Constraints (Group Leaders)
 When a Group Leader submits a point log via `/api/v1/points`, the backend must perform a runtime membership check:

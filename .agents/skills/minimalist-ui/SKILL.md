@@ -1,85 +1,73 @@
 ---
 name: minimalist-ui
-description: Clean editorial-style interfaces. Warm monochrome palette, typographic contrast, flat bento grids, muted pastels. No gradients, no heavy shadows.
+description: Premium editorial-style interfaces. Warm monochrome palette, high typographic contrast, flat bento grids, and meticulous thin layered paper-cut aesthetics. 
 ---
 
-# Protocol: Premium Utilitarian Minimalism UI Architect
+# Protocol: Premium Utilitarian Minimalism & Paper-Cut UI Architect
 
 ## 1. Protocol Overview
-Name: Premium Utilitarian Minimalism & Editorial UI
-Description: An advanced frontend engineering directive for generating highly refined, ultra-minimalist, "document-style" web interfaces analogous to top-tier workspace platforms. This protocol strictly enforces a high-contrast warm monochrome palette, bespoke typographic hierarchies, meticulous structural macro-whitespace, bento-grid layouts, and an ultra-flat component architecture with deliberate muted pastel accents. It actively rejects standard generic SaaS design trends.
+Name: Premium Utilitarian Minimalism & Editorial Paper-Cut UI
+Description: An advanced frontend engineering directive for generating highly refined, ultra-minimalist, "document-style" web interfaces analogous to top-tier workspace platforms. This protocol strictly enforces a high-contrast warm monochrome palette, bespoke typographic hierarchies, meticulous structural macro-whitespace, bento-grid layouts, and a "thin layered paper-cut" component architecture. It actively rejects standard generic SaaS design trends.
 
 ## 2. Absolute Negative Constraints (Banned Elements)
 The AI must strictly avoid the following generic web development defaults:
 - DO NOT use the "Inter", "Roboto", or "Open Sans" typefaces.
-- DO NOT use generic, thin-line icon libraries like "Lucide", "Feather", or standard "Heroicons".
-- DO NOT use Tailwind's default heavy drop shadows (e.g., `shadow-md`, `shadow-lg`, `shadow-xl`). Shadows must be practically non-existent or heavily customized to be ultra-diffuse and low opacity (< 0.05).
-- DO NOT use primary colored backgrounds for large elements or sections (e.g., no bright blue, green, or red hero sections).
-- DO NOT use gradients, neon colors, or 3D glassmorphism (beyond subtle navbar blurs).
-- DO NOT use `rounded-full` (pill shapes) for large containers, cards, or primary buttons.
-- DO NOT use emojis anywhere in code, markup, text content, headings, or alt text. Replace with proper icons or clean SVG primitives.
+- DO NOT use generic, saturated primary colored backgrounds for large elements or sections.
+- DO NOT use gradients, neon colors, or 3D glassmorphism.
+- DO NOT use `rounded-full` (pill shapes) for large containers, cards, or primary input fields.
+- DO NOT use emojis anywhere in code, markup, text content, headings, or alt text. Replace with proper SVG primitives.
 - DO NOT use generic placeholder names like "John Doe", "Acme Corp", or "Lorem Ipsum". Use realistic, contextual content.
 - DO NOT use AI copywriting clichés: "Elevate", "Seamless", "Unleash", "Next-Gen", "Game-changer", "Delve". Write plain, specific language.
 
-## 3. Typographic Architecture
+## 3. Typographic Architecture & Hierarchy
 The interface must rely on extreme typographic contrast and premium font selection to establish an editorial feel.
-- Primary Sans-Serif (Body, UI, Buttons): Use clean, geometric, or system-native fonts with character. Target: `font-family: 'SF Pro Display', 'Geist Sans', 'Helvetica Neue', 'Switzer', sans-serif`.
-- Editorial Serif (Hero Headings & Quotes): Target: `font-family: 'Lyon Text', 'Newsreader', 'Playfair Display', 'Instrument Serif', serif`. Apply tight tracking (`letter-spacing: -0.02em` to `-0.04em`) and tight line-height (`1.1`).
-- Monospace (Code, Keystrokes, Meta-data): Target: `font-family: 'Geist Mono', 'SF Mono', 'JetBrains Mono', monospace`.
-- Text Colors: Body text must never be absolute black (`#000000`). Use off-black/charcoal (`#111111` or `#2F3437`) with a generous `line-height` of `1.6` for legibility. Secondary text should be muted gray (`#787774`).
+- Primary Sans-Serif (Body, UI, Buttons, Inputs): Use clean, geometric, or system-native fonts with character. Target: `font-family: 'SF Pro Display', 'Geist Sans', 'Helvetica Neue', 'Switzer', sans-serif`.
+- Editorial Serif (Main Headings & Brand Logos): Target: `font-family: 'Lyon Text', 'Newsreader', 'Playfair Display', 'Instrument Serif', serif`. Apply tight tracking (`letter-spacing: -0.02em` to `-0.03em`) and elegant line-height (`1.1` to `1.2`).
+- Text Colors: Main headings and body text must never be absolute black (`#000000`). Use off-black/charcoal (`#111111` or `#1A1A1A`) with a generous `line-height` of `1.6` for body text legibility. Labels and secondary text must use muted charcoal-gray (`#555555` or `#666666`).
+- Label Styling: Avoid aggressive, heavy, full-uppercase labels. Use elegant sentence-case or clean, tracked-out small caps (`text-xs font-medium tracking-wider text-neutral-500`).
 
-## 4. Color Palette (Warm Monochrome + Spot Pastels)
+## 4. Color Palette & Surface System (Warm Monochrome + Spot Pastels)
 Color is a scarce resource, utilized only for semantic meaning or subtle accents.
-- Canvas / Background: Pure White `#FFFFFF` or Warm Bone/Off-White `#F7F6F3` / `#FBFBFA`.
-- Primary Surface (Cards): `#FFFFFF` or `#F9F9F8`.
-- Structural Borders / Dividers: Ultra-light gray `#EAEAEA` or `rgba(0,0,0,0.06)`.
-- Accent Colors: Exclusively use highly desaturated, washed-out pastels for tags, inline code backgrounds, or subtle icon backgrounds.
-  - Pale Red: `#FDEBEC` (Text: `#9F2F2D`)
-  - Pale Blue: `#E1F3FE` (Text: `#1F6C9F`)
-  - Pale Green: `#EDF3EC` (Text: `#346538`)
-  - Pale Yellow: `#FBF3DB` (Text: `#956400`)
+- Canvas / Background: Premium soft off-white or warm bone (`#F9FAFB`, `#F8F9FA`, or `#FBFBFA`).
+- Primary Surface (Cards, Forms, Containers): Pure White `#FFFFFF` to create a stark, layered contrast against the warm canvas background.
+- Structural Borders / Dividers: Ultra-thin, crisp gray (` border-neutral-100` / `#F0F0F0` or `rgba(0,0,0,0.04)`).
+- Accent Colors (Muted Pastels for status, tags, and validation alerts):
+  - Pale Red (Errors): `#FDEBEC` (Text: `#9F2F2D`)
+  - Pale Blue (Info): `#E1F3FE` (Text: `#1F6C9F`)
+  - Pale Green (Approved): `#EDF3EC` (Text: `#346538`)
+  - Pale Yellow (Pending): `#FBF3DB` (Text: `#956400`)
 
-## 5. Component Specifications
-- Bento Box Feature Grids:
-  - Utilize asymmetrical CSS Grid layouts.
-  - Cards must have exactly `border: 1px solid #EAEAEA`.
-  - Border-radius must be crisp: `8px` or `12px` maximum.
-  - Internal padding must be generous (e.g., `24px` to `40px`).
+## 5. Thin Layered Paper-Cut Component Specifications
+Components must feel like physical, precision-cut sheets of premium textured paper layered cleanly on top of each other.
+- Auth & Feature Cards:
+  - Background must be pure white (`#FFFFFF`).
+  - Must use a razor-thin, crisp border: `border: 1px solid #F0F0F0` or Tailwind v4 `border-neutral-100`.
+  - Must feature an ultra-subtle, highly diffused, realistic multi-layered depth shadow to lift the paper layer slightly off the canvas: `box-shadow: 0 4px 20px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.01)`.
+  - Border-radius must be crisp: exactly `8px` or `12px`. Internal padding must be generous (`p-8` to `p-10` / `32px` to `40px`).
+- Input Fields & Select Dropdowns:
+  - Never use heavy default gray borders. Use ultra-thin `border border-neutral-200`.
+  - Background should be flat white or an extremely subtle gray tint (`bg-neutral-50/50`).
+  - Add smooth transitions on focus state: `focus:border-neutral-900 focus:ring-0 transition-all duration-300`.
 - Primary Call-To-Action (Buttons):
-  - Solid background `#111111`, text `#FFFFFF`. 
-  - Slight border-radius (`4px` to `6px`). No box-shadow. 
-  - Hover state should be a subtle color shift to `#333333` or a micro-scale `transform: scale(0.98)`.
+  - Solid off-black background `#111111`, text `#FFFFFF`.
+  - Crisp border-radius (`6px` to `8px`). No heavy shadow.
+  - Interactive states: Micro-scale down on click (`active:scale-[0.98] transition-transform duration-200`), and subtle opacity or brightness shift on hover (`hover:bg-neutral-800`).
 - Tags & Status Badges:
-  - Pill-shaped (`border-radius: 9999px`), very small typography (`text-xs`), uppercase with wide tracking (`letter-spacing: 0.05em`).
-  - Background must use the defined Muted Pastels.
-- Accordions (FAQ):
-  - Strip all container boxes. Separate items only with a `border-bottom: 1px solid #EAEAEA`.
-  - Use a clean, sharp `+` and `-` icon for the toggle state.
-- Keystroke Micro-UIs:
-  - Render shortcuts as physical keys using `<kbd>` tags: `border: 1px solid #EAEAEA`, `border-radius: 4px`, `background: #F7F6F3`, using the Monospace font.
-- Faux-OS Window Chrome:
-  - When mocking up software, wrap it in a minimalist container with a white top bar containing three small, light gray circles (replicating macOS window controls).
+  - Clean border-radius (`4px` to `6px`), very small typography (`text-xs`), uppercase with wide tracking (`letter-spacing: 0.05em`).
+  - Background must strictly use the defined Muted Pastels based on entity state (e.g., `PENDING` uses Pale Yellow, `APPROVED` uses Pale Green).
 
-## 6. Iconography & Imagery Directives
-- System Icons: Use "Phosphor Icons (Bold or Fill weights)" or "Radix UI Icons" for a technical, slightly thicker-stroke aesthetic. Standardize stroke width across all icons.
-- Illustrations: Monochromatic, rough continuous-line ink sketches on a white background, featuring a single offset geometric shape filled with a muted pastel color.
-- Photography: Use high-quality, desaturated images with a warm tone. Apply subtle overlays (`opacity: 0.04` warm grain) to blend photos into the monochrome palette. Never use oversaturated stock photos. Use reliable placeholders like `https://picsum.photos/seed/{context}/1200/800` when real assets are unavailable.
-- Hero & Section Backgrounds: Sections should not feel empty and flat. Use subtle full-width background imagery at very low opacity, soft radial light spots (`radial-gradient` with warm tones at `opacity: 0.03`), or minimal geometric line patterns to add depth without breaking the clean aesthetic.
+## 6. Iconography Directives
+- System Icons: Since `lucide-react` is an established project dependency, use Lucide icons but strictly style them to match the technical aesthetic: enforce thin stroke-widths (`strokeWidth={1.5}` or `strokeWidth={1.25}`) and explicit, consistent sizing (`size={18}` or `size={16}`). Never use default thick icon strokes.
 
-## 7. Subtle Motion & Micro-Animations
-Motion should feel invisible — present but never distracting. The goal is quiet sophistication, not spectacle.
-- Scroll Entry: Elements fade in gently as they enter the viewport. Use `translateY(12px)` + `opacity: 0` resolving over `600ms` with `cubic-bezier(0.16, 1, 0.3, 1)`. Use `IntersectionObserver`, never `window.addEventListener('scroll')`.
-- Hover States: Cards lift with an ultra-subtle shadow shift (`box-shadow` transitioning from `0 0 0` to `0 2px 8px rgba(0,0,0,0.04)` over `200ms`). Buttons respond with `scale(0.98)` on `:active`.
-- Staggered Reveals: Lists and grid items enter with a cascade delay (`animation-delay: calc(var(--index) * 80ms)`). Never mount everything at once.
-- Background Ambient Motion: Optional. A single, very slow-moving radial gradient blob (`animation-duration: 20s+`, `opacity: 0.02-0.04`) drifting behind hero sections. Must be applied to a `position: fixed; pointer-events: none` layer. Never on scrolling containers.
-- Performance: Animate exclusively via `transform` and `opacity`. No layout-triggering properties (`top`, `left`, `width`, `height`). Use `will-change: transform` sparingly and only on actively animating elements.
+## 7. Subtle Motion & Tactile Micro-Animations
+Motion should feel organic and invisible — present but never distracting.
+- Scroll & Page Entry: Elements fade and lift gently as they mount. Use `translateY(8px)` + `opacity: 0` resolving over `500ms` with a clean ease-out curve (`cubic-bezier(0.16, 1, 0.3, 1)`).
+- Tactile Hover States: Cards or structural components respond to user interaction with an ultra-subtle shadow or positional shift, giving the feedback of pressing onto a soft paper surface.
 
 ## 8. Execution Protocol
-When tasked with writing frontend code (HTML, React, Tailwind, Vue) or designing a layout:
-1. Establish the macro-whitespace first. Use massive vertical padding between sections (e.g., `py-24` or `py-32` in Tailwind).
-2. Constrain the main typography content width to `max-w-4xl` or `max-w-5xl`.
-3. Apply the custom typographic hierarchy and monochromatic color variables immediately.
-4. Ensure every card, divider, and border adheres strictly to the `1px solid #EAEAEA` rule.
-5. Add scroll-entry animations to all major content blocks.
-6. Ensure sections have visual depth through imagery, ambient gradients, or subtle textures — no empty flat backgrounds.
-7. Provide code that reflects this high-end, uncluttered, editorial aesthetic natively without requiring manual adjustments.
+When generating or refactoring frontend code (React, TailwindCSS v4):
+1. Establish macro-whitespace first using substantial padding (`py-16` to `py-24`).
+2. Constrain form layouts and core content blocks to clean, editorial dimensions (`max-w-md` for auth/login forms, `max-w-5xl` for dashboard bento grids).
+3. Apply the custom typographic hierarchy (Serif for brand header, clean geometric Sans-Serif for inputs and text) immediately.
+4. Ensure every card container strictly obeys the White Surface + Thin Neutral Border + Diffused Multi-layered Shadow rules.
+5. Provide code that reflects this clean, high-end, uncluttered, editorial paper-cut aesthetic natively without requiring manual adjustments.

@@ -1,20 +1,20 @@
 ---
 name: postgresql-transactions
-description: Hướng dẫn Agent viết code Java/Spring Boot đảm bảo tính toàn vẹn dữ liệu PostgreSQL cho ClassManager — tập trung vào immutable audit log, Cron Job chốt điểm và xử lý concurrency.
+description: Guide for writing Java/Spring Boot code that ensures PostgreSQL data integrity for ClassManager — focusing on immutable audit logs, weekly points lock cron jobs, and concurrency handling.
 ---
 
-# Mục tiêu
-Đảm bảo mọi thao tác ghi dữ liệu quan trọng trong ClassManager (point_logs, weekly_reports, OTP) đều chạy trong transaction đúng, không bị race condition, không mất dữ liệu khi có lỗi giữa chừng.
+# Objective
+Ensure all critical write operations in ClassManager (point_logs, weekly_reports, OTP) run within proper transactions, preventing race conditions and avoiding data loss in case of mid-process failures.
 
 ---
 
-## Quy trình Thực hiện (Instructions)
+## Instructions
 
-### 1. Nguyên tắc Transaction cơ bản
+### 1. Basic Transaction Rules
 
-**Đặt @Transactional đúng chỗ:**
+**Place @Transactional in the correct layer:**
 ```java
-// ✅ ĐÚNG — @Transactional ở Service layer
+// ✅ CORRECT — @Transactional at the Service layer
 @Service
 public class PointLogService {
     @Transactional
@@ -26,16 +26,16 @@ public class PointLogService {
     }
 }
 
-// ❌ SAI — @Transactional ở Controller
+// ❌ INCORRECT — @Transactional at the Controller layer
 @RestController
 public class PointController {
-    @Transactional  // không đặt ở đây
+    @Transactional  // Do not place here
     @PostMapping
     public ResponseEntity<?> addPoint(...) { ... }
 }
 ```
 
-**Read-only transaction cho query:**
+**Read-only transactions for queries:**
 ```java
 @Transactional(readOnly = true)
 public List<StudentResponse> getStudentsByClass(Integer classId) {
@@ -49,7 +49,7 @@ public List<StudentResponse> getStudentsByClass(Integer classId) {
 ### 2. Immutable Point Log (BR-POINT-01, BR-POINT-08)
 
 ```java
-// ✅ ĐÚNG — chỉ INSERT
+// ✅ CORRECT — INSERT only
 @Transactional
 public void addPoint(Integer studentId, Integer value, String reason) {
     LocalDate weekStart = getCurrentWeekStart();
@@ -65,29 +65,29 @@ public void addPoint(Integer studentId, Integer value, String reason) {
         .build());
 }
 
-// ✅ ĐÚNG — điều chỉnh bằng bản ghi đối trừ
+// ✅ CORRECT — adjustment via offset record
 @Transactional
 public void reversePoint(Long originalLogId, String reason) {
     PointLog original = pointLogRepository.findById(originalLogId)
         .orElseThrow(NotFoundException::new);
     pointLogRepository.save(PointLog.builder()
         .studentId(original.getStudentId())
-        .pointValue(-original.getPointValue())  // đảo dấu
-        .reason("Hoàn trả: " + reason)
+        .pointValue(-original.getPointValue())  // invert sign
+        .reason("Reversal: " + reason)
         .weekStartDate(original.getWeekStartDate())
         .createdAt(Instant.now())
         .build());
 }
 
-// ❌ TUYỆT ĐỐI KHÔNG làm
+// ❌ NEVER do the following
 student.setTotalPoint(student.getTotalPoint() + value);
 pointLogRepository.deleteById(id);
 pointLogRepository.updatePointValue(id, newValue);
 ```
 
-**Tính điểm hiện tại — luôn tính từ logs:**
+**Calculate current points — always compute from logs:**
 ```java
-// ✅ ĐÚNG
+// ✅ CORRECT
 @Query("""
     SELECT sy.basePoint + COALESCE(SUM(pl.pointValue), 0)
     FROM PointLog pl
@@ -100,13 +100,13 @@ Integer calculateCurrentPoint(
     @Param("schoolYearId") Integer schoolYearId
 );
 
-// ❌ SAI — không đọc cached total
+// ❌ INCORRECT — do not read cached total
 return student.getTotalPoint();
 ```
 
 ---
 
-### 3. Cron Job Chốt Điểm Tuần (BR-WEEK-01 đến BR-WEEK-04)
+### 3. Weekly Point Lock Cron Job (BR-WEEK-01 to BR-WEEK-04)
 
 ```java
 @Component
@@ -118,13 +118,13 @@ public class WeeklyLockScheduler {
 
     @Scheduled(cron = "0 59 23 * * SUN", zone = "Asia/Ho_Chi_Minh")
     public void lockWeeklyPoints() {
-        log.info("[CRON] Bắt đầu chốt điểm tuần - {}", LocalDateTime.now());
+        log.info("[CRON] Starting weekly point locking - {}", LocalDateTime.now());
         try {
             int count = weeklyReportService.lockCurrentWeek("CRON");
-            log.info("[CRON] Hoàn thành - đã chốt {} học sinh", count);
+            log.info("[CRON] Completed - locked {} students", count);
         } catch (Exception e) {
-            log.error("[CRON] Lỗi khi chốt điểm: {}", e.getMessage(), e);
-            // KHÔNG re-throw — để Cron Job tiếp tục lần sau
+            log.error("[CRON] Error locking points: {}", e.getMessage(), e);
+            // DO NOT re-throw — let the Cron Job continue next time
         }
     }
 }
@@ -138,9 +138,9 @@ public class WeeklyReportService {
         LocalDate weekStart = getLastMonday();
         LocalDate weekEnd = weekStart.plusDays(6);
 
-        // BR-WEEK-03: bỏ qua nếu đã lock thủ công
+        // BR-WEEK-03: skip if already locked manually
         if (weeklyReportRepository.existsByWeekStartAndLocked(weekStart)) {
-            log.info("[CRON] Tuần {} đã được lock trước", weekStart);
+            log.info("[CRON] Week {} was already locked", weekStart);
             return 0;
         }
 
@@ -148,7 +148,7 @@ public class WeeklyReportService {
         List<WeeklyReport> reports = new ArrayList<>();
 
         for (Student student : students) {
-            // BR-WEEK-04: snapshot tại thời điểm chốt
+            // BR-WEEK-04: snapshot at lock time
             int snapshot = pointLogRepository
                 .calculateCurrentPoint(student.getId(), getCurrentSchoolYearId());
 
@@ -163,7 +163,7 @@ public class WeeklyReportService {
                 .build());
         }
 
-        // Batch insert — không gọi save() từng cái trong vòng lặp
+        // Batch insert — do not call save() in a loop
         weeklyReportRepository.saveAll(reports);
         calculateAndSaveRanks(reports, weekStart);
         return reports.size();
@@ -178,17 +178,17 @@ public class WeeklyReportService {
 
 ---
 
-### 4. Tránh N+1 Query
+### 4. Avoiding N+1 Queries
 
 ```java
-// ❌ SAI — N+1
+// ❌ INCORRECT — N+1
 List<Student> students = studentRepository.findAll();
 students.forEach(s -> {
     int point = pointLogRepository.calculateCurrentPoint(s.getId(), yearId);
     response.add(new StudentWithPoint(s, point));
 });
 
-// ✅ ĐÚNG — 1 query duy nhất
+// ✅ CORRECT — a single query
 @Query("""
     SELECT s.id as studentId, s.fullName,
            sy.basePoint + COALESCE(SUM(pl.pointValue), 0) as currentPoint
@@ -205,7 +205,7 @@ List<StudentPointProjection> findStudentsWithPoints(
     @Param("schoolYearId") Integer schoolYearId
 );
 
-// Interface Projection — chỉ lấy field cần thiết
+// Interface Projection — select only necessary fields
 public interface StudentPointProjection {
     Integer getStudentId();
     String getFullName();
@@ -215,20 +215,20 @@ public interface StudentPointProjection {
 
 ---
 
-### 5. Race Condition — Chốt điểm đồng thời
+### 5. Race Condition — Concurrent Lock
 
 ```java
-// UNIQUE constraint trong DB là safety net đầu tiên
-// UNIQUE (student_id, week_start_date) trong weekly_reports
+// UNIQUE constraint in the DB is the first safety net
+// UNIQUE (student_id, week_start_date) in weekly_reports
 
-// Bắt duplicate gracefully
+// Catch duplicates gracefully
 @Transactional
 public int lockCurrentWeek(String lockedBy) {
     try {
         // ... lock logic
         weeklyReportRepository.saveAll(reports);
     } catch (DataIntegrityViolationException e) {
-        log.warn("[CRON] Tuần đã được lock bởi thread khác, bỏ qua");
+        log.warn("[CRON] Week already locked by another thread, skipping");
         return 0;
     }
 }
@@ -236,43 +236,43 @@ public int lockCurrentWeek(String lockedBy) {
 
 ---
 
-### 6. OTP — Xử lý hết hạn & giới hạn
+### 6. OTP — Expiry & Limits Handling
 
 ```java
 @Transactional
 public void verifyOtp(String phoneNumber, String otpInput) {
     OtpLog otp = otpLogRepository.findLatestUnused(phoneNumber)
-        .orElseThrow(() -> new OtpNotFoundException("Mã OTP không tồn tại"));
+        .orElseThrow(() -> new OtpNotFoundException("OTP code does not exist"));
 
-    // Kiểm tra hết hạn
+    // Check expiry
     if (Instant.now().isAfter(otp.getExpiresAt())) {
-        throw new OtpExpiredException("Mã OTP đã hết hạn");
+        throw new OtpExpiredException("OTP code has expired");
     }
 
-    // Kiểm tra số lần sai (BR-LINK-03: tối đa 3 lần)
+    // Check invalid attempts (BR-LINK-03: maximum 3 times)
     if (otp.getAttemptCount() >= 3) {
-        throw new OtpLockedException("Đã nhập sai quá 3 lần");
+        throw new OtpLockedException("Invalid entry exceeded 3 times");
     }
 
-    // Verify bằng BCrypt — KHÔNG so sánh plain text
+    // Verify using BCrypt — DO NOT compare plain text
     if (!passwordEncoder.matches(otpInput, otp.getOtpHash())) {
         otp.setAttemptCount(otp.getAttemptCount() + 1);
         otpLogRepository.save(otp);
-        throw new OtpInvalidException("Mã OTP không đúng");
+        throw new OtpInvalidException("Incorrect OTP code");
     }
 
-    // Mark as used trong cùng transaction
+    // Mark as used within the same transaction
     otp.setIsUsed(true);
     otpLogRepository.save(otp);
 }
 
-// Rate limit (BR-LINK-09: 5 lần/SĐT/ngày)
+// Rate limit (BR-LINK-09: 5 times/phone number/day)
 @Transactional(readOnly = true)
 public void checkOtpRateLimit(String phoneNumber) {
     LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
     int count = otpLogRepository.countTodayByPhone(phoneNumber, today);
     if (count >= 5) {
-        throw new OtpRateLimitException("Đã gửi OTP quá 5 lần hôm nay");
+        throw new OtpRateLimitException("OTP sent more than 5 times today");
     }
 }
 ```
@@ -282,54 +282,54 @@ public void checkOtpRateLimit(String phoneNumber) {
 ### 7. School Year Freeze (BR-YEAR-02)
 
 ```java
-// Gọi ở đầu mọi service method có ghi dữ liệu
+// Call at the beginning of every data-writing service method
 @Transactional(readOnly = true)
 public void assertSchoolYearActive(Integer schoolYearId) {
     SchoolYear sy = schoolYearRepository.findById(schoolYearId)
         .orElseThrow(NotFoundException::new);
     if ("ENDED".equals(sy.getStatus())) {
         throw new SchoolYearEndedException(
-            "Năm học đã kết thúc — không thể thêm dữ liệu mới"
+            "School year has ended — cannot add new data"
         );
     }
 }
 
 @Transactional
 public PointLogResponse addPointLog(CreatePointLogRequest req) {
-    assertSchoolYearActive(req.getSchoolYearId()); // kiểm tra đầu tiên
-    // ... logic tiếp theo
+    assertSchoolYearActive(req.getSchoolYearId()); // check first
+    // ... subsequent logic
 }
 ```
 
 ---
 
-### 8. Transactional Audit Logging (Đảm bảo tính toàn vẹn của Audit Trail)
+### 8. Transactional Audit Logging (Ensuring Audit Trail Integrity)
 
-- Bất kỳ hành động quản trị nhạy cảm nào (BR-AUDIT-02) yêu cầu ghi log vào `audit_logs` phải được thực thi trong cùng một transaction (`@Transactional`) với thao tác nghiệp vụ chính. 
-- Nếu thao tác cập nhật cơ sở dữ liệu chính hoặc thao tác ghi audit log thất bại, toàn bộ quá trình phải được rollback tự động.
+- Any sensitive administrative action (BR-AUDIT-02) requiring an audit log entry in `audit_logs` must be executed within the same transaction (`@Transactional`) as the main business operation.
+- If either the main database update or the audit log write fails, the entire process must be rolled back automatically.
 
 ```java
-// ✅ ĐÚNG — Ghi Audit Log và cập nhật trạng thái đồng thời trong cùng một transaction
+// ✅ CORRECT — Write Audit Log and update status simultaneously within the same transaction
 @Transactional
 public void approveStudent(Integer studentProfileId, Integer actorUserId) {
     StudentProfile student = studentProfileRepository.findById(studentProfileId)
         .orElseThrow(NotFoundException::new);
     
-    // Lưu lại trạng thái cũ
+    // Save old state
     String oldValueJson = "{\"approvalStatus\":\"PENDING\"}";
     
-    // Thực hiện mutation
+    // Perform mutation
     student.getUser().setApprovalStatus(ApprovalStatus.APPROVED);
     student.getUser().setApprovedAt(Instant.now());
     studentProfileRepository.save(student);
     
-    // Lưu lại trạng thái mới
+    // Save new state
     String newValueJson = String.format(
         "{\"approvalStatus\":\"APPROVED\",\"approvedAt\":\"%s\"}", 
         student.getUser().getApprovedAt()
     );
     
-    // Ghi audit log
+    // Write audit log
     auditLogRepository.save(AuditLog.builder()
         .actorUserId(actorUserId)
         .action("APPROVE_STUDENT")
@@ -344,14 +344,14 @@ public void approveStudent(Integer studentProfileId, Integer actorUserId) {
 
 ---
 
-## Quy trình Kiểm tra (Verification Workflow)
+## Verification Workflow
 
 ```bash
-# Chạy test transaction
+# Run transaction tests
 cd backend
 ./gradlew test --tests "*TransactionTest" --tests "*SchedulerTest"
 
-# Bật SQL logging để phát hiện N+1
+# Enable SQL logging to detect N+1
 # application-test.yml:
 # spring.jpa.show-sql: true
 # spring.jpa.properties.hibernate.format_sql: true
@@ -362,17 +362,17 @@ cd backend
 
 ---
 
-## Anti-patterns Cần Tránh
+## Anti-patterns to Avoid
 
 ```
-❌ UPDATE hoặc DELETE point_log đã tạo
-❌ Đọc cached total điểm từ student entity
-❌ @Transactional ở Controller hoặc Repository
-❌ save() từng entity trong vòng lặp — dùng saveAll()
-❌ N+1 query khi lấy danh sách học sinh kèm điểm
-❌ So sánh OTP plain text — luôn dùng BCrypt
-❌ Không kiểm tra is_locked trước khi thêm point_log
-❌ Cron Job throw exception ra ngoài — phải catch và log
-❌ Không dùng timezone Asia/Ho_Chi_Minh khi tính ngày
-❌ Tạo 2 SchoolYear ACTIVE cùng lúc
+❌ UPDATE or DELETE an already created point_log
+❌ Read cached total points from the student entity
+❌ @Transactional in Controller or Repository
+❌ save() individual entities in a loop — use saveAll()
+❌ N+1 queries when fetching student list with points
+❌ OTP plain text comparison — always use BCrypt
+❌ Not checking is_locked before adding point_log
+❌ Cron Job throwing exceptions out — must catch and log
+❌ Not using Asia/Ho_Chi_Minh timezone when calculating dates
+❌ Creating 2 ACTIVE SchoolYears simultaneously
 ```

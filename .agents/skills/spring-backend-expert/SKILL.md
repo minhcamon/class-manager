@@ -1,154 +1,153 @@
 ---
 name: spring-backend-expert
-description: Huấn luyện Agent viết REST API Spring Boot 3.x cho ClassManager — tuân thủ Clean Architecture, immutable audit log, JWT auth và phân quyền RBAC 4 role.
+description: Train Agent to write REST API Spring Boot 3.x for ClassManager — adhering to Clean Architecture, immutable audit log, JWT auth and RBAC 4 role permissions.
 ---
 
-# Mục tiêu
-Đảm bảo toàn bộ Backend ClassManager được viết đúng kiến trúc, không vi phạm Business Rules bất biến (đặc biệt immutable point_logs), bảo mật theo từng role và nhất quán error response.
+# Objective
+Ensure the entire ClassManager Backend is written strictly according to the architecture, without violating immutable Business Rules (especially immutable point_logs), securing access by role, and maintaining consistent error responses.
 
 ---
 
-## Quy trình Thực hiện (Instructions)
+## Instructions
 
-### 1. Kiểm tra Ngữ cảnh
-- Mọi class Java phải nằm trong `backend/src/main/java/com/classmanager/`
-- Đọc `docs/srs/classmanager_srs_full.md` và `docs/schema.sql` trước khi viết bất kỳ logic nào
-- Đọc `CLAUDE.md` để nắm Business Rules bắt buộc
+### 1. Context Checklist
+- All Java classes must reside in `backend/src/main/java/com/classmanager/`
+- Read `docs/srs/classmanager_srs_full.md` and `docs/schema.sql` before writing any logic.
+- Read `CLAUDE.md` to understand the mandatory Business Rules.
 
-### 2. Quy tắc Kiến trúc & Cấu trúc dự án (KHÔNG được vi phạm)
+### 2. Architectural Rules & Project Structure (DO NOT violate)
 
-**Cấu trúc Package chuẩn:**
-Tất cả các class Java mới phải được tổ chức đúng thư mục quy định tại `backend/src/main/java/com/classmanager/`:
-- `config/`: Cấu hình hệ thống (Security, Database, CORS, JWT...).
-- `controller/`: Các Restful Controllers nhận request, validate và ủy quyền cho Service.
-- `service/`: Chứa interface & logic nghiệp vụ lõi, xử lý transaction.
-- `repository/`: Các repository mở rộng Spring Data JPA để truy xuất dữ liệu.
-- `entity/`: Các lớp ánh xạ bảng cơ sở dữ liệu.
-- `dto/`: Chứa các lớp truyền tải dữ liệu:
-  - `dto/request/`: Các request payload.
-  - `dto/response/`: Các response payload.
-- `exception/`: Các lớp định nghĩa ngoại lệ tùy chỉnh và `GlobalExceptionHandler`.
-- `scheduler/`: Các tác vụ tự động hóa và lập lịch (Cron Job).
+**Standard Package Structure:**
+All new Java classes must be organized in the correct packages under `backend/src/main/java/com/classmanager/`:
+- `config/`: System configuration (Security, Database, CORS, JWT...).
+- `controller/`: Restful Controllers to receive requests, validate, and delegate to Services.
+- `service/`: Core business logic interfaces & implementations, transaction management.
+- `repository/`: Repositories extending Spring Data JPA for data access.
+- `entity/`: Entities mapping to database tables.
+- `dto/`: Data Transfer Objects (DTOs):
+  - `dto/request/`: Request payloads.
+  - `dto/response/`: Response payloads.
+- `exception/`: Custom exception classes and `GlobalExceptionHandler`.
+- `scheduler/`: Scheduled tasks and automation (Cron Jobs).
 
-**Quy trình viết một Feature mới ở Backend (Backend Feature Flow):**
-Khi tạo một tính năng mới, tuân thủ đúng trình tự phát triển sau:
-1. **Entity**: Khai báo/cập nhật JPA Entity trong package `entity`.
-2. **Repository**: Tạo interface JPA Repository trong package `repository`. Sử dụng `@EntityGraph` hoặc Join Fetch nếu cần tránh lỗi N+1.
-3. **Service & Transaction**: Tạo Service trong package `service`, định nghĩa logic nghiệp vụ, xử lý transaction. Sử dụng `@Transactional(readOnly = true)` cho truy vấn và `@Transactional` cho chỉnh sửa.
-4. **Audit Logging Integration**: Nếu feature nằm trong danh sách các hành động cần Audit (BR-AUDIT-02), viết tích hợp cơ chế ghi log thông qua JPA Entity Listeners hoặc gọi `AuditLogService` đồng bộ trong Transaction.
-5. **DTOs & Validation**: Viết Request/Response DTOs trong package `dto`, khai báo Bean Validation `@NotNull`, `@NotBlank`, `@Size`, `@Pattern`, `@Min`, `@Max`.
-6. **Controller**: Tạo Controller trong package `controller`, ánh xạ request qua `@Valid`, gán quyền truy cập với `@PreAuthorize`.
-7. **Verify**: Biên dịch và chạy thử kiểm nghiệm bằng Gradle.
+**Backend Feature Development Flow:**
+When developing a new backend feature, adhere to the following sequence:
+1. **Entity**: Declare/update the JPA Entity in the `entity` package.
+2. **Repository**: Create the JPA Repository interface in the `repository` package. Use `@EntityGraph` or Join Fetch to prevent N+1 queries if necessary.
+3. **Service & Transaction**: Create the Service in the `service` package, define business logic, and handle transactions. Use `@Transactional(readOnly = true)` for queries and `@Transactional` for mutations.
+4. **Audit Logging Integration**: If the feature involves actions that require auditing (BR-AUDIT-02), integrate audit logging via JPA Entity Listeners or call `AuditLogService` synchronously within the transaction.
+5. **DTOs & Validation**: Create Request/Response DTOs in the `dto` package, applying Bean Validation annotations (`@NotNull`, `@NotBlank`, `@Size`, `@Pattern`, `@Min`, `@Max`).
+6. **Controller**: Create the Controller in the `controller` package, map requests with `@Valid`, and enforce access control using `@PreAuthorize`.
+7. **Verify**: Compile and test using Gradle.
 
-**Quy chuẩn các Layer:**
-**Controller layer:**
-- Dùng `@RestController` + `@RequestMapping("/api/v1/...")`
-- KHÔNG chứa business logic — chỉ nhận request, gọi Service, trả response
-- KHÔNG inject Repository trực tiếp vào Controller
-- Prefix endpoint theo role: `/api/v1/admin/`, `/api/v1/teacher/`, `/api/v1/leader/`, `/api/v1/student/`
+**Layer Conventions:**
+**Controller Layer:**
+- Use `@RestController` + `@RequestMapping("/api/v1/...")`
+- DO NOT contain business logic — only receive requests, delegate to Services, and return responses.
+- DO NOT inject Repositories directly into Controllers.
+- Prefix endpoints by role: `/api/v1/admin/`, `/api/v1/teacher/`, `/api/v1/leader/`, `/api/v1/student/`
 
-**Service layer:**
-- Toàn bộ business logic và `@Transactional` đặt tại đây
-- KHÔNG inject Service khác vòng tròn (circular dependency)
-- Throw custom exception — KHÔNG return null
+**Service Layer:**
+- All business logic and `@Transactional` configurations must reside here.
+- DO NOT allow circular dependencies between Services.
+- Throw custom exceptions — DO NOT return null.
 
-**Repository layer:**
-- Dùng Spring Data JPA
-- Với query phức tạp (join nhiều bảng): dùng `@Query` với JPQL hoặc `@EntityGraph` để tránh N+1
-- KHÔNG dùng native query với input người dùng (SQL Injection)
+**Repository Layer:**
+- Use Spring Data JPA.
+- For complex queries (multiple joins): use `@Query` with JPQL or `@EntityGraph` to avoid N+1 queries.
+- DO NOT use native queries with raw user inputs (SQL Injection risk).
 
-**DTO layer:**
-- Tách `Request DTO` và `Response DTO` — KHÔNG expose Entity ra ngoài API
-- Dùng Lombok: `@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor`
-- Validate Request DTO bằng Bean Validation: `@NotNull`, `@NotBlank`, `@Size`, `@Pattern`
+**DTO Layer:**
+- Separate Request DTOs from Response DTOs — DO NOT expose Entities directly to the API.
+- Use Lombok annotations: `@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor`.
+- Validate Request DTOs using Bean Validation: `@NotNull`, `@NotBlank`, `@Size`, `@Pattern`.
 
-### 3. Business Rules Bắt buộc
+### 3. Mandatory Business Rules
 
 **Immutable Point Log (BR-POINT-01, BR-POINT-08):**
 ```java
-// ✅ ĐÚNG — chỉ INSERT
+// ✅ CORRECT — INSERT only
 pointLogRepository.save(new PointLog(...));
 
-// ❌ SAI — tuyệt đối không làm
+// ❌ INCORRECT — never do this
 student.setTotalPoint(student.getTotalPoint() + value);
 studentRepository.save(student);
 ```
 
-**Tính điểm hiện tại:**
+**Calculate current points:**
 ```java
-// Luôn tính từ point_logs, không lưu cached total
+// Always compute from point_logs, do not use a cached total field.
 int currentPoint = schoolYear.getBasePoint()
     + pointLogRepository.sumByStudentAndYear(studentId, schoolYearId);
 ```
 
-**Kiểm tra tuần locked trước khi chấm điểm:**
+**Check if the week is locked before grading:**
 ```java
 if (weeklyReportRepository.isLocked(studentId, weekStartDate)) {
-    throw new WeekAlreadyLockedException("Tuần này đã được chốt điểm");
+    throw new WeekAlreadyLockedException("This week points have already been locked.");
 }
 ```
 
-**Kiểm tra Tổ trưởng chỉ chấm trong tổ:**
+**Ensure Group Leaders only grade within their group:**
 ```java
 if (!student.getGroupId().equals(leader.getGroupId())) {
-    throw new StudentNotInGroupException("Học sinh không thuộc tổ của bạn");
+    throw new StudentNotInGroupException("Student is not in your group.");
 }
 ```
 
-### 4. Auth & Phân quyền
-- Dùng `@PreAuthorize("hasRole('TEACHER')")` hoặc custom `@SecurityRequirement`
-- JWT payload phải chứa: `sub`, `role`, `classId`, `groupId`, `schoolYearId`
-- Refresh Token lưu HttpOnly Cookie — KHÔNG trả trong response body
-- OTP lưu trong Database dạng BCrypt hash — KHÔNG lưu plain text.
-- **Cơ chế Mock OTP (MVP/Dev)**: Khi không cấu hình `SMS_API_KEY` (để trống), API phản hồi gửi OTP (`SmsResponse`) bắt buộc phải trả về trường `otp` chứa mã plain text để Frontend lấy hiển thị lên giao diện. Khi cấu hình `SMS_API_KEY` hoạt động, trường `otp` trong `SmsResponse` bắt buộc phải trả về `null` (không lộ mã).
+### 4. Authentication & Authorization
+- Use `@PreAuthorize("hasRole('TEACHER')")` or custom `@SecurityRequirement`.
+- JWT payload must contain: `sub`, `role`, `classId`, `groupId`, `schoolYearId`.
+- Store Refresh Token in an HttpOnly Cookie — DO NOT return it in the response body.
+- Store OTP in the Database as a BCrypt hash — DO NOT store as plain text.
+- **Mock OTP Mechanism (MVP/Dev)**: When `SMS_API_KEY` is not configured (left blank), the OTP sending response (`SmsResponse`) must return the plain text OTP in the `otp` field so the Frontend can display it. When `SMS_API_KEY` is active, the `otp` field in `SmsResponse` must return `null` (no exposure).
 
-### 5. Error Response (Bắt buộc thống nhất)
+### 5. Error Response (Mandatory Standardization)
 ```java
-// GlobalExceptionHandler phải trả đúng format này
+// GlobalExceptionHandler must return this exact format
 {
   "timestamp": "2025-09-01T10:00:00+07:00",
   "status": 400,
   "error": "VALIDATION_ERROR",
-  "message": "Dữ liệu không hợp lệ",
-  "details": [{"field": "pointValue", "message": "Điểm phải khác 0"}],
+  "message": "Invalid data",
+  "details": [{"field": "pointValue", "message": "Points must not be 0"}],
   "path": "/api/v1/leader/points"
 }
 ```
 
 ### 6. Audit Logging (BR-AUDIT-01, BR-AUDIT-02, BR-AUDIT-03)
-- Bất kỳ hành động quản trị nhạy cảm nào dưới đây (BR-AUDIT-02) bắt buộc phải ghi Audit Log vào bảng `audit_logs` đồng bộ trong cùng một transaction:
-  1. Duyệt/Từ chối giáo viên đăng ký (`APPROVE_TEACHER`, `REJECT_TEACHER`)
-  2. Duyệt/Từ chối học sinh đăng ký (`APPROVE_STUDENT`, `REJECT_STUDENT`)
-  3. Bổ nhiệm tổ trưởng (`ASSIGN_LEADER`)
-  4. Chuyển tổ học sinh (`TRANSFER_STUDENT_GROUP`)
-  5. Kích hoạt mẫu form động (`ACTIVATE_FORM_TEMPLATE`)
-  6. Khóa điểm tuần thủ công/tự động (`WEEKLY_LOCK_MANUAL`, `WEEKLY_LOCK_AUTO`)
-  7. Đóng năm học (`END_SCHOOL_YEAR`)
-- Cách thực hiện: Gọi `AuditLogService.logAction(...)` trong Service, hoặc dùng JPA Entity Listeners `@EntityListeners` để tự động chụp trạng thái `old_value` và `new_value` dưới dạng JSONB.
-- **Cấm tuyệt đối** việc cung cấp bất kỳ API nào cho phép `UPDATE` hoặc `DELETE` bản ghi trong bảng `audit_logs`. Bảng này chỉ được phép `INSERT`.
+- Any sensitive administrative actions listed below (BR-AUDIT-02) must write an Audit Log entry into the `audit_logs` table synchronously within the same transaction:
+  1. Approve/Reject teacher registration (`APPROVE_TEACHER`, `REJECT_TEACHER`)
+  2. Approve/Reject student registration (`APPROVE_STUDENT`, `REJECT_STUDENT`)
+  3. Assign group leader (`ASSIGN_LEADER`)
+  4. Transfer student group (`TRANSFER_STUDENT_GROUP`)
+  5. Activate dynamic form template (`ACTIVATE_FORM_TEMPLATE`)
+  6. Lock weekly points manually/automatically (`WEEKLY_LOCK_MANUAL`, `WEEKLY_LOCK_AUTO`)
+  7. End school year (`END_SCHOOL_YEAR`)
+- How to implement: Call `AuditLogService.logAction(...)` in the Service, or use JPA `@EntityListeners` to automatically capture `old_value` and `new_value` as JSONB.
+- **Strictly prohibit** providing any APIs that allow `UPDATE` or `DELETE` on the `audit_logs` table. Only `INSERT` is permitted.
 
-### 7. Cron Job
+### 7. Cron Jobs
 ```java
 @Scheduled(cron = "59 23 * * 0", zone = "Asia/Ho_Chi_Minh")
 @Transactional
 public void weeklyLockJob() {
-    // 1. Kiểm tra is_locked trước — bỏ qua nếu đã lock
-    // 2. Tính snapshot điểm từng học sinh
-    // 3. Tính rank_in_class và rank_in_group
-    // 4. Lưu weekly_report với locked_by = 'CRON'
-    // Log đầy đủ: bắt đầu, kết thúc, số bản ghi
+    // 1. Check is_locked first — skip if already locked
+    // 2. Calculate point snapshot for each student
+    // 3. Calculate rank_in_class and rank_in_group
+    // 4. Save weekly_report with locked_by = 'CRON'
+    // Log fully: start, end, record count
 }
 ```
 
-### 8. ENV & Cấu hình
+### 8. Environment Variables & Configuration
 
-**Quy tắc bắt buộc:**
-- KHÔNG hardcode bất kỳ URL, secret, credentials nào trong code
-- Mọi giá trị nhạy cảm đọc từ ENV qua `${ENV_VAR}` trong `application.yml`
-- File `.env` KHÔNG được commit lên Git — chỉ commit `.env.example`
+**Mandatory Rules:**
+- DO NOT hardcode any URLs, secrets, or credentials in code.
+- All sensitive values must be read from ENV variables using `${ENV_VAR}` in `application.yml`.
+- The `.env` file MUST NOT be committed to Git — only commit `.env.example`.
 
-
-**`application.yml` đọc từ ENV:**
+**`application.yml` reading from ENV:**
 ```yaml
 spring:
   datasource:
@@ -179,48 +178,48 @@ app:
     sender: ${SMS_SENDER:ClassManager}
 ```
 
-**Khi deploy lên Koyeb:**
-- Set toàn bộ biến ENV qua Koyeb Dashboard → Service → Environment
-- Đổi `ALLOWED_ORIGINS` thành Vercel domain thật
-- Đổi `SPRING_PROFILES_ACTIVE=prod`
+**When deploying to Koyeb:**
+- Set all environment variables via Koyeb Dashboard → Service → Environment.
+- Change `ALLOWED_ORIGINS` to the actual Vercel domain.
+- Change `SPRING_PROFILES_ACTIVE=prod`.
 
 ### 9. CORS
-- Cho phép origin từ ENV `ALLOWED_ORIGINS` (không hardcode)
+- Allow origins specified in the ENV variable `ALLOWED_ORIGINS` (never hardcode).
 - Dev: `http://localhost:5173`
 - Production: Vercel domain
 
 ---
 
-## Quy trình Kiểm tra (Verification Workflow)
+## Verification Workflow
 
-Sau mỗi lần tạo hoặc sửa code Java:
+After creating or modifying Java code:
 
 ```bash
-# Bước 1: Di chuyển vào backend
+# Step 1: Navigate to backend directory
 cd backend
 
-# Bước 2: Compile kiểm tra lỗi
+# Step 2: Compile and check for errors
 ./gradlew compileJava
 
-# Bước 3: Chạy test liên quan (nếu có)
-./gradlew test --tests "TênClassTest"
+# Step 3: Run related tests (if applicable)
+./gradlew test --tests "ClassNameTest"
 
-# Bước 4: Chỉ tạo Artifact Walkthrough khi compile SUCCESS
+# Step 4: Only create the Walkthrough artifact if compile succeeds
 ```
 
 ---
 
-## Anti-patterns Cần Tránh
+## Anti-patterns to Avoid
 
 ```
-❌ UPDATE trực tiếp điểm học sinh
-❌ Expose Entity ra ngoài API (không qua DTO)
-❌ Business logic trong Controller
-❌ @Transactional trong Controller
-❌ Inject Repository vào Controller
-❌ Dùng // TODO, // ..., placeholder — viết đầy đủ
-❌ Hardcode secret, URL, credentials — luôn dùng ${ENV_VAR} trong application.yml
-❌ Commit file .env lên Git — chỉ commit .env.example
-❌ Native query với input người dùng
-❌ Tạo SchoolYear thứ 2 khi đã có ACTIVE
+❌ Updating student points directly
+❌ Exposing Entity directly to API (without DTO)
+❌ Business logic in Controller
+❌ @Transactional in Controller
+❌ Injecting Repository into Controller
+❌ Using // TODO, // ..., placeholder comments — write complete implementations
+❌ Hardcoding secrets, URLs, or credentials — always use `${ENV_VAR}` in application.yml
+❌ Committing `.env` file to Git — only commit `.env.example`
+❌ Native queries with user inputs
+❌ Creating a second SchoolYear when there is already an ACTIVE one
 ```

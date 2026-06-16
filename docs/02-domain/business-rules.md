@@ -18,7 +18,6 @@ This document consolidates all business rules (`BR-*`) extracted from the ClassM
 - API requests by restricted users must return HTTP 403 Forbidden with custom error codes `PENDING_APPROVAL` or `REGISTRATION_REJECTED`.
 
 ### BR-AUTH-03: Teacher Approval Path
-- Teachers must specify their affiliated School (`schoolId`) upon registration.
 - Teacher accounts must be manually approved by an `ADMIN` before activation.
 
 ### BR-AUTH-04: Student Approval Path
@@ -27,7 +26,7 @@ This document consolidates all business rules (`BR-*`) extracted from the ClassM
 
 ### BR-AUTH-05: Token Configurations
 - JWT Access Token lifespan: 2 hours.
-- JWT Payload claims: `sub` (userId), `role`, `schoolId`, `teacherProfileId` (if Teacher), `studentProfileId` (if Student), `classId` (if Student), `groupId` (if Student, if grouped).
+- JWT Payload claims: `sub` (userId), `role`, `teacherProfileId` (if Teacher), `studentProfileId` (if Student), `classId` (if Student), `groupId` (if Student, if grouped).
 - JWT Refresh Token lifespan: 7 days, stored in a secure, `HttpOnly` Cookie.
 
 ### BR-AUTH-06: Identity Linking
@@ -35,21 +34,15 @@ This document consolidates all business rules (`BR-*`) extracted from the ClassM
 
 ---
 
-## 2. School Year Management (School Year)
+## 2. Class Management (Class)
 
-### BR-YEAR-01: Year Multi-Tenancy & Active Bounds
-- Each school (`schools`) maintains independent school year configurations.
-- At any point in time, a school is allowed a maximum of **one** school year in the `ACTIVE` status.
-- **DB Constraint**: `CREATE UNIQUE INDEX uq_school_year_active_per_school ON school_years (school_id, status) WHERE status = 'ACTIVE'`
+### BR-CLASS-01: Class Active Bounds
+- At any point in time, a teacher is allowed a maximum of **one** class in the `ACTIVE` status.
+- **DB Constraint**: `CREATE UNIQUE INDEX uq_class_active_per_teacher ON classes (teacher_id, status) WHERE status = 'ACTIVE'`
 
-### BR-YEAR-02: Ended Year Immutability
-- A teacher can transition an active school year to `ENDED`.
-- Once a school year is `ENDED`, all points, log lists, and weekly reports associated with that year are read-only. No insertions or edits are permitted.
-
-### BR-YEAR-03: Year Promotion Cascades
-- When a new school year is activated:
-  - The grade level (`classes.grade`) of all classes is incremented by 1 (e.g. grade 10 classes advance to grade 11).
-  - Students finishing grade 12 are marked as `GRADUATED` (`student_profiles.status = 'GRADUATED'`).
+### BR-CLASS-02: Ended Class Immutability
+- A teacher can transition an active class to `ENDED` (Stopping the class).
+- Once a class is `ENDED`, all points, log lists, and weekly reports associated with that class are read-only. No insertions or edits are permitted.
 
 ---
 
@@ -71,7 +64,7 @@ This document consolidates all business rules (`BR-*`) extracted from the ClassM
 ### BR-POINT-01: Score Calculation Invariant
 - A student's current competition score is calculated dynamically:
   $$\text{Current Point} = \text{Base Point} + \sum (\text{point\_logs.point\_value})$$
-  (For the active school year).
+  (For the student's current class).
 - Scores should not be stored as a cached total column on the profile.
 
 ### BR-POINT-02: Immutable Log History
@@ -95,7 +88,7 @@ This document consolidates all business rules (`BR-*`) extracted from the ClassM
 - The automatic chosing process runs at 23:59:59 PM every Sunday (`Asia/Ho_Chi_Minh` time zone).
 
 ### BR-WEEK-02: Snapshot Schema
-- Weekly reports record: `snapshot_point` (final point total), `snapshot_base_point` (base point for the year), `total_bonus` (sum of additions), `total_penalty` (sum of subtractions), `rank_in_class`, and `rank_in_group`.
+- Weekly reports record: `snapshot_point` (final point total), `snapshot_base_point` (base point for the class), `total_bonus` (sum of additions), `total_penalty` (sum of subtractions), `rank_in_class`, and `rank_in_group`.
 
 ### BR-WEEK-03: Locked Week Isolation
 - Once a weekly report is locked (`is_locked = true`), all points within that week's timeframe are permanently closed.
@@ -128,7 +121,7 @@ The following actions must emit audit logs:
 3. Transferring students between groups.
 4. Activating new dynamic form templates.
 5. Locking weekly reports.
-6. Closing school years.
+6. Closing/Ending classes.
 
 ### BR-AUDIT-03: Audit Schema Invariant
 - Audit records must record the actor (`actor_user_id`), action label (`action`), table target (`entity_name`, `entity_id`), and state difference (`old_value` and `new_value` in JSONB format).

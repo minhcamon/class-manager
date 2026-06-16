@@ -4,12 +4,12 @@ spring:
   application:
     name: backend
   datasource:
-    url: ${DB_URL}
+    url: ${DB_DIRECT_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
