@@ -99,7 +99,8 @@ if (!student.getGroupId().equals(leader.getGroupId())) {
 - Dùng `@PreAuthorize("hasRole('TEACHER')")` hoặc custom `@SecurityRequirement`
 - JWT payload phải chứa: `sub`, `role`, `classId`, `groupId`, `schoolYearId`
 - Refresh Token lưu HttpOnly Cookie — KHÔNG trả trong response body
-- OTP lưu dạng BCrypt hash — KHÔNG lưu plain text
+- OTP lưu trong Database dạng BCrypt hash — KHÔNG lưu plain text.
+- **Cơ chế Mock OTP (MVP/Dev)**: Khi không cấu hình `SMS_API_KEY` (để trống), API phản hồi gửi OTP (`SmsResponse`) bắt buộc phải trả về trường `otp` chứa mã plain text để Frontend lấy hiển thị lên giao diện. Khi cấu hình `SMS_API_KEY` hoạt động, trường `otp` trong `SmsResponse` bắt buộc phải trả về `null` (không lộ mã).
 
 ### 5. Error Response (Bắt buộc thống nhất)
 ```java

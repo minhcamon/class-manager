@@ -1,3 +1,32 @@
 spring:
+  config:
+    import: optional:file:.env.properties, optional:file:../.env.properties
   application:
     name: backend
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  hikari:
+    maximum-pool-size: 15
+    minimum-idle: 3
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:7200000}
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID}
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS}
+  timezone: ${APP_TIMEZONE:Asia/Ho_Chi_Minh}
+  sms:
+    api-key: ${SMS_API_KEY:}
+    sender: ${SMS_SENDER:ClassManager}

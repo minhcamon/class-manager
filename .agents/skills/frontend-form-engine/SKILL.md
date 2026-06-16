@@ -174,6 +174,10 @@ resend action
 cooldown protection
 ```
 
+**Mock OTP UI Display Rule (MVP/Dev)**:
+- Nếu API response gửi OTP trả về trường `otp` dạng plain text (khi `SMS_API_KEY` trống), Frontend bắt buộc phải hiển thị mã này lên màn hình thông qua Inline Alert hoặc Toast (ví dụ: *"Mã OTP thử nghiệm của bạn là: XXXXXX"*) để người dùng có thể nhập trực tiếp. Không để ẩn mã khiến người dùng không thể đăng nhập.
+
+
 Required states:
 
 ```text

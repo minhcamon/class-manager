@@ -69,6 +69,12 @@ export interface ApiError {
   details: { field: string; message: string }[]
   path: string
 }
+
+// Response khi yêu cầu gửi OTP (Chế độ MVP/Thử nghiệm)
+export interface OtpSendResponse {
+  message: string
+  otp?: string // Có mã này khi SMS_API_KEY để trống, phục vụ hiển thị trực tiếp trên UI
+}
 ```
 
 ### 3. ENV & Cấu hình
